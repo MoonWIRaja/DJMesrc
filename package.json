@@ -1,0 +1,14 @@
+{
+    "name":  "djmesrc-workspace",
+    "private":  true,
+    "version":  "0.5.4",
+    "packageManager":  "pnpm@12.14.0",
+    "scripts":  {
+                    "dev":  "corepack pnpm --filter @djmesrc/desktop dev",
+                    "build":  "corepack pnpm --filter @djmesrc/ui build",
+                    "site:dev":  "corepack pnpm --filter @djmesrc/website dev",
+                    "site:build":  "corepack pnpm --filter @djmesrc/website build",
+                    "tauri":  "corepack pnpm --filter @djmesrc/desktop tauri",
+                    "check":  "corepack pnpm --filter @djmesrc/ui check"
+                }
+}

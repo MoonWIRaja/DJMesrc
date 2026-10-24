@@ -1,0 +1,1 @@
+export function KeycapBadge({ code }: { code?: string }) { if (!code) return null; const label = code.replace(/^Key/, "").replace(/^Digit/, "").replace(/^Numpad/, "NUM ").replace("Space", "SPACE"); return <kbd className="keycap">{label}</kbd>; }

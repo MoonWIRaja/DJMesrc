@@ -1,0 +1,63 @@
+name: Windows release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-publish:
+    runs-on: windows-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 12.14.0
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+      - name: Install workspace dependencies
+        run: corepack pnpm install --frozen-lockfile
+      - name: Build Windows installers
+        run: corepack pnpm tauri build
+      - name: Create SHA-256 checksums
+        shell: pwsh
+        run: |
+          $files = @(
+            Get-ChildItem "apps/desktop/target/release/bundle/nsis" -Filter "*-setup.exe"
+            Get-ChildItem "apps/desktop/target/release/bundle/msi" -Filter "*.msi"
+          )
+          if ($files.Count -lt 2) { throw "Expected the setup EXE and MSI installer." }
+          $lines = foreach ($file in $files) {
+            $hash = (Get-FileHash -LiteralPath $file.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+            "$hash  $($file.Name)"
+          }
+          Set-Content -LiteralPath "apps/desktop/target/release/bundle/SHA256SUMS.txt" -Value $lines -Encoding utf8
+      - name: Create or update the GitHub release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.ref_name }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          gh release view $env:RELEASE_TAG --repo $env:REPOSITORY *> $null
+          if ($LASTEXITCODE -ne 0) {
+            gh release create $env:RELEASE_TAG --repo $env:REPOSITORY --verify-tag --title "DJMesrc $env:RELEASE_TAG" --generate-notes
+            if ($LASTEXITCODE -ne 0) { throw "Could not create the GitHub release." }
+          }
+          $assets = @(
+            Get-ChildItem "apps/desktop/target/release/bundle/nsis" -Filter "*-setup.exe"
+            Get-ChildItem "apps/desktop/target/release/bundle/msi" -Filter "*.msi"
+          ) | ForEach-Object { $_.FullName }
+          $assets += "apps/desktop/target/release/bundle/SHA256SUMS.txt"
+          gh release upload $env:RELEASE_TAG @assets --repo $env:REPOSITORY --clobber

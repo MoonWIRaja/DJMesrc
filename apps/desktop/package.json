@@ -1,0 +1,1 @@
+{"name":"@djmesrc/desktop","private":true,"version":"0.5.4","type":"module","scripts":{"dev":"tauri dev","tauri":"tauri"},"devDependencies":{"@tauri-apps/cli":"^2"}}
